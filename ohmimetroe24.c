@@ -5,6 +5,7 @@
 #include "lib/config/config.h"
 #include "lib/utils/get_E24_value.h"
 #include "lib/utils/get_colors.h"
+#include "lib/ws2812/ws2812.h"
 
 const int standard_resistor = 10e3;	// Resistor de 10k ohm
 const int adc_resolution = 4095; 	// Resolução do ADC (12 bits)
@@ -14,13 +15,17 @@ bool reset = false;
 static volatile uint32_t last_time = 0; // Armazena o tempo do último evento (em microssegundos)
 
 void gpio_irq_handler(uint gpio, uint32_t events);
+void draw_band_colors(char *color, Led_Matrix *frame, int column, bool clear, bool print);
 
 int main() {
-	ssd1306_t ssd;	// Inicializa a estrutura do display
+	ssd1306_t ssd;		// Inicializa a estrutura do display
+	Led_Matrix frame;	// Frame atual da matriz de led
 	char strx[5], str_y[5], str_e[5]; // Buffer para armazenar a string
 	bool cor = true;
 
 	config(&ssd);	// Inicializa e configura todos os componentes
+
+	ws2812_clean(&frame);	// Limpa a matriz 5x5
 
 	gpio_set_irq_enabled_with_callback(BTNB, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);	// Callback para BTN B
 
@@ -42,12 +47,12 @@ int main() {
 
 			float error = (fabsf(rx - rc) / rx) * 100;
 
-			char **cores = get_colors(rc);
+			char **colors = get_colors(rc);
 
 			printf("Valor calculado: %1.0f ||| Valor E24: %1.0f || Erro: %.2f\n\n", rx, rc, error);
-			printf("Faixa 1: %s  ", cores[0]);
-			printf("Faixa 2: %s  ", cores[1]);
-			printf("Multiplicador: %s\n\n", cores[2]);
+			printf("Faixa 1: %s  ", colors[0]);
+			printf("Faixa 2: %s  ", colors[1]);
+			printf("Multiplicador: %s\n\n", colors[2]);
 
 			sprintf(strx, "%1.0f", avg);						   // Converte em string
 			sprintf(str_y, (rc < 10) ? "%.1f" : "%1.0f", rc);	   // Converte em string
@@ -62,15 +67,20 @@ int main() {
 			ssd1306_draw_string(&ssd, "1:", 50, 6);			// Desenha uma string
 			ssd1306_draw_string(&ssd, "2:", 50, 16);		// Desenha uma string
 			ssd1306_draw_string(&ssd, "3:", 50, 26);		// Desenha uma string
-			ssd1306_draw_string(&ssd, cores[0], 70, 6);		// Desenha uma string
-			ssd1306_draw_string(&ssd, cores[1], 70, 16);	// Desenha uma string
-			ssd1306_draw_string(&ssd, cores[2], 70, 26);	// Desenha uma string
+			ssd1306_draw_string(&ssd, colors[0], 70, 6);		// Desenha uma string
+			ssd1306_draw_string(&ssd, colors[1], 70, 16);	// Desenha uma string
+			ssd1306_draw_string(&ssd, colors[2], 70, 26);	// Desenha uma string
 			ssd1306_draw_string(&ssd, "ADC", 13, 41);		// Desenha uma string
 			ssd1306_draw_string(&ssd, "Resisten.", 50, 41); // Desenha uma string
 			ssd1306_line(&ssd, 44, 3, 44, 61, cor);			// Desenha uma linha vertical
 			ssd1306_draw_string(&ssd, strx, 8, 52);			// Desenha uma string
 			ssd1306_draw_string(&ssd, str_y, 59, 52);		// Desenha uma string
 			ssd1306_send_data(&ssd);						// Atualiza o display
+
+			draw_band_colors(colors[0],&frame,1,true,false);
+			draw_band_colors(colors[1],&frame,2,false,false);
+			draw_band_colors(colors[2],&frame,3,false,true);
+
 			sleep_ms(700);
 		} else {
             printf("Saindo para o modo de gravação...\n\n");
@@ -79,6 +89,8 @@ int main() {
             ssd1306_draw_string(&ssd, "MODO DE", 28, 28);	// Desenha uma string 
             ssd1306_draw_string(&ssd, "GRAVACAO", 24, 40);	// Desenha uma string
             ssd1306_send_data(&ssd);    					// Atualiza o display
+
+			ws2812_clean(&frame);
 
             reset_usb_boot(0,0);    // Sai para o modo de gravação
         }
@@ -92,4 +104,27 @@ void gpio_irq_handler(uint gpio, uint32_t events) {
 		last_time = current_time;
 		reset = true;
 	}
+}
+
+void draw_band_colors(char *color, Led_Matrix *frame, int column, bool clear, bool print) {
+    if(strcmp(color, "Black") == 0) 
+        ws2812_draw_column(frame, 0, 0, 0, column, clear, print);
+    else if(strcmp(color, "Brown") == 0) 
+        ws2812_draw_column(frame, 0.35/8, 0.05/8, 0, column, clear, print);
+    else if(strcmp(color, "Red") == 0) 
+        ws2812_draw_column(frame, 1.0/8, 0, 0, column, clear, print);
+    else if(strcmp(color, "Orange") == 0) 
+        ws2812_draw_column(frame, 0.75/8, 0.15/8, 0, column, clear, print);
+    else if(strcmp(color, "Yellow") == 0) 
+        ws2812_draw_column(frame, 1.0/8, 1.0/8, 0, column, clear, print);
+    else if(strcmp(color, "Green") == 0) 
+        ws2812_draw_column(frame, 0, 1.0/8, 0, column, clear, print);
+    else if(strcmp(color, "Blue") == 0) 
+        ws2812_draw_column(frame, 0, 0, 1.0/8, column, clear, print);
+    else if(strcmp(color, "Violet") == 0) 
+        ws2812_draw_column(frame, 0.5/8, 0, 1.0/8, column, clear, print);
+    else if(strcmp(color, "Gray") == 0) 
+        ws2812_draw_column(frame, 0.5/8, 0.5/8, 0.5/8, column, clear, print);
+    else if(strcmp(color, "White") == 0) 
+        ws2812_draw_column(frame, 1.0/8, 1.0/8, 1.0/8, column, clear, print);
 }
