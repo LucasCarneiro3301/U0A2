@@ -20,7 +20,7 @@ void draw_band_colors(char *color, Led_Matrix *frame, int column, bool clear, bo
 int main() {
 	ssd1306_t ssd;		// Inicializa a estrutura do display
 	Led_Matrix frame;	// Frame atual da matriz de led
-	char strx[5], str_y[5], str_e[5]; // Buffer para armazenar a string
+	char str_a[5], str_r[5], str_e[5]; // Buffer para armazenar a string
 	bool cor = true;
 
 	config(&ssd);	// Inicializa e configura todos os componentes
@@ -41,23 +41,26 @@ int main() {
 
 			float avg = sum / 500.0f; // Média aritmética para 500 iterações
 
-			float rx = (standard_resistor * avg) / (adc_resolution - avg); // Calcula o valor do resistor desconhecido
+			printf("Valor media: %f\n\n", avg);
 
-			float rc = get_E24_value(rx);
+			float rx = (standard_resistor * avg) / (adc_resolution - avg);	// Calcula o valor do resistor desconhecido
 
-			float error = (fabsf(rx - rc) / rx) * 100;
+			float rc = get_E24_value(rx);									// Obtém o valor da série E24 mais próximo
 
-			char **colors = get_colors(rc);
+			float error = (fabsf(rx - rc) / rx) * 100;						// Calcula o erro relativo
+
+			char **colors = (rx >= 1.5e5) ? (char*[]){"--", "--", "--"} : get_colors(rc);	// Obtém as cores correspondentes
 
 			printf("Valor calculado: %1.0f ||| Valor E24: %1.0f || Erro: %.2f\n\n", rx, rc, error);
 			printf("Faixa 1: %s  ", colors[0]);
 			printf("Faixa 2: %s  ", colors[1]);
 			printf("Multiplicador: %s\n\n", colors[2]);
 
-			sprintf(strx, "%1.0f", avg);						   // Converte em string
-			sprintf(str_y, (rc < 10) ? "%.1f" : "%1.0f", rc);	   // Converte em string
-			sprintf(str_e, (error < 10) ? "%.2f" : "%.1f", error); // Converte em string
+			sprintf(str_a, "%1.0f", avg);						   							// Converte em string
+			sprintf(str_r, (rx >= 1.5e5) ? "--" : (rc < 10) ? "%.1f" : "%1.0f", rc);		// Converte em string
+			sprintf(str_e, (rx >= 1.5e5) ? "--" : (error < 10) ? "%.2f" : "%.1f", error);	// Converte em string
 
+		
 			ssd1306_fill(&ssd, !cor);						// Limpa o display
 			ssd1306_rect(&ssd, 3, 3, 122, 60, cor, !cor);	// Desenha um retângulo
 			ssd1306_line(&ssd, 3, 37, 123, 37, cor);		// Desenha uma linha
@@ -67,19 +70,19 @@ int main() {
 			ssd1306_draw_string(&ssd, "1:", 50, 6);			// Desenha uma string
 			ssd1306_draw_string(&ssd, "2:", 50, 16);		// Desenha uma string
 			ssd1306_draw_string(&ssd, "3:", 50, 26);		// Desenha uma string
-			ssd1306_draw_string(&ssd, colors[0], 70, 6);		// Desenha uma string
+			ssd1306_draw_string(&ssd, colors[0], 70, 6);	// Desenha uma string
 			ssd1306_draw_string(&ssd, colors[1], 70, 16);	// Desenha uma string
 			ssd1306_draw_string(&ssd, colors[2], 70, 26);	// Desenha uma string
 			ssd1306_draw_string(&ssd, "ADC", 13, 41);		// Desenha uma string
 			ssd1306_draw_string(&ssd, "Resisten.", 50, 41); // Desenha uma string
 			ssd1306_line(&ssd, 44, 3, 44, 61, cor);			// Desenha uma linha vertical
-			ssd1306_draw_string(&ssd, strx, 8, 52);			// Desenha uma string
-			ssd1306_draw_string(&ssd, str_y, 59, 52);		// Desenha uma string
+			ssd1306_draw_string(&ssd, str_a, 8, 52);		// Desenha uma string
+			ssd1306_draw_string(&ssd, str_r, 59, 52);		// Desenha uma string
 			ssd1306_send_data(&ssd);						// Atualiza o display
 
-			draw_band_colors(colors[0],&frame,1,true,false);
-			draw_band_colors(colors[1],&frame,2,false,false);
-			draw_band_colors(colors[2],&frame,3,false,true);
+			draw_band_colors(colors[0],&frame,1,true,false);	// Desenha a faixa 1 na coluna 1
+			draw_band_colors(colors[1],&frame,2,false,false);	// Desenha a faixa 2 na coluna 2
+			draw_band_colors(colors[2],&frame,3,false,true);	// Desenha a faixa 3 (multiplicador) na coluna 3
 
 			sleep_ms(700);
 		} else {
@@ -97,22 +100,24 @@ int main() {
 	}
 }
 
+// Handler de interrupção
 void gpio_irq_handler(uint gpio, uint32_t events) {
-	uint32_t current_time = to_us_since_boot(get_absolute_time()); // Obtém o tempo atual em microssegundos
+	uint32_t current_time = to_us_since_boot(get_absolute_time());	// Obtém o tempo atual em microssegundos
   
-    if (current_time - last_time > 2e5) { // 200 ms de debouncing
+    if (current_time - last_time > 2e5) {	// 200 ms de debouncing
 		last_time = current_time;
 		reset = true;
 	}
 }
 
+//	Desenha uma coluna na matriz de leds conforme a cor obtida.
 void draw_band_colors(char *color, Led_Matrix *frame, int column, bool clear, bool print) {
     if(strcmp(color, "Black") == 0) 
         ws2812_draw_column(frame, 0, 0, 0, column, clear, print);
     else if(strcmp(color, "Brown") == 0) 
         ws2812_draw_column(frame, 0.35/8, 0.05/8, 0, column, clear, print);
     else if(strcmp(color, "Red") == 0) 
-        ws2812_draw_column(frame, 1.0/8, 0, 0, column, clear, print);
+        ws2812_draw_column(frame, 1.0/7, 0, 0, column, clear, print);
     else if(strcmp(color, "Orange") == 0) 
         ws2812_draw_column(frame, 0.75/8, 0.15/8, 0, column, clear, print);
     else if(strcmp(color, "Yellow") == 0) 

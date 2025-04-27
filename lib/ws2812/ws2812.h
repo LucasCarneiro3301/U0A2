@@ -8,6 +8,7 @@
 #include "../config/config.h"
 #include <string.h>
 
+// Limpa todos os leds de um frame
 void frame_cleaner(Led_Matrix *frame) {
     for(int i = 0; i < 5; i++) {
         for(int j = 0; j < 5; j++) {
@@ -23,8 +24,8 @@ uint32_t color(double b, double r, double g) {
   return (((unsigned char)(g * 255)) << 24) | (((unsigned char)(r * 255)) << 16) | (((unsigned char)(b * 255)) << 8);
 }
 
-//Imprimindo o frame do número na matriz de led
-void symbol_printing(Led_Matrix *frame){
+//Imprime o frame na matriz de led
+void printer(Led_Matrix *frame){
     for (int i = 4; i >= 0; i--){
         if(i % 2) {
             for (int j = 0; j < 5; j ++) 
@@ -36,26 +37,28 @@ void symbol_printing(Led_Matrix *frame){
     }
 }
 
-//Forma o frame do número
-void symbol_framer(Led_Matrix *frame, float r, float g, float b, int row, int col, bool clear, bool print) {
+//Forma um frame na matriz de led
+void framer(Led_Matrix *frame, float r, float g, float b, int row, int col, bool clear, bool print) {
     if(clear) frame_cleaner(frame);
     (*frame)[row][col].red = r;
     (*frame)[row][col].blue = b;
     (*frame)[row][col].green = g;
-    if(print) symbol_printing(frame); 
+    if(print) printer(frame); 
 }
 
+// Desenha uma coluna na matriz de leds
 void ws2812_draw_column(Led_Matrix *frame, float r, float g, float b, int col, bool clear, bool print) {
-    symbol_framer(frame,r,g,b,0,col,clear,false);
-    symbol_framer(frame,r,g,b,1,col,false,false);
-    symbol_framer(frame,r,g,b,2,col,false,false);
-    symbol_framer(frame,r,g,b,3,col,false,false);
-    symbol_framer(frame,r,g,b,4,col,false,print);
+    framer(frame,r,g,b,0,col,clear,false);
+    framer(frame,r,g,b,1,col,false,false);
+    framer(frame,r,g,b,2,col,false,false);
+    framer(frame,r,g,b,3,col,false,false);
+    framer(frame,r,g,b,4,col,false,print);
 }
 
+// Limpa a matriz de leds
 void ws2812_clean(Led_Matrix *frame) {
     frame_cleaner(frame);
-    symbol_printing(frame); 
+    printer(frame); 
 }
 
 #endif

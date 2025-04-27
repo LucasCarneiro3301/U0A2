@@ -7,6 +7,7 @@
 
 #include <math.h>
 
+// Função para calcular o valor E24 mais próximo de uma resistência fornecida.
 float get_E24_value(float rx) {
 	const float E24_factors[] = {
 		1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0,
@@ -17,15 +18,15 @@ float get_E24_value(float rx) {
 	float last_diff = 1e9, cur_diff = 0.0, cur_value = 0.0, multiplier = 0.0;
 	float E24_value = 0.0;
 
-	for (int decade = 0; decade < decades; decade++)
+	for (int decade = 0; decade < decades; decade++)    // Percorre as décadas de resistores (1, 10, 100, 1000, etc...).
 	{
 		multiplier = powf(10, decade);
-		for (int i = 0; i < 24; i++)
+		for (int i = 0; i < 24; i++)                    // Percorre os fatores da série E24
 		{
-			cur_value = E24_factors[i] * multiplier;
-			cur_diff = fabsf(cur_value - rx);
+			cur_value = E24_factors[i] * multiplier;    // Multiplica o fator da série E24 pelo multiplicador da década.
+			cur_diff = fabsf(cur_value - rx);           // Calcula a diferença absoluta entre o valor atual e o valor fornecido (rx).
 
-			if (cur_diff < last_diff)
+			if (cur_diff < last_diff)                   // Se a diferença atual for menor que a diferença anterior, atualiza o valor E24 mais próximo.
 			{
 				last_diff = cur_diff;
 				E24_value = cur_value;
