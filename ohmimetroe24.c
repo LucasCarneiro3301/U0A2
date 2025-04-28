@@ -31,7 +31,7 @@ int main() {
 
 	while (true) {
 		if(!reset) {
-			adc_select_input(2); // Seleciona o ADC do pino 28.
+			adc_select_input(2); // Seleciona o ADC para eixo X. O pino 28 como entrada analógica
 
 			float sum = 0.0f;	// Registra a soma de todos os níveis ADC calculados em 500 iterações
 			for (int i = 0; i < 500; i++) {

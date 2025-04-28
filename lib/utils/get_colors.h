@@ -34,7 +34,7 @@ char **get_colors(float E24_value) {
 		if (E24_value < 10 * multiplier)
 		{
 			bands[0] = (char *)colors[value / multiplier];                  // Obtém o 1° dígito => cor da 1º faixa
-			bands[1] = (char *)colors[(value / (multiplier / 10)) % 10];    // Obtém o 2° dígito => cor da 2º faixa
+			bands[1] = (char *)colors[(value / (multiplier / 10)) % 10];    // Obtém o 3° dígito => cor da 2º faixa
 			bands[2] = (char *)colors[decade - 1];                          // Obtém a década => cor da 3º faixa
 			return bands;
 		}
