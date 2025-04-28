@@ -112,7 +112,7 @@ void gpio_irq_handler(uint gpio, uint32_t events) {
 
 //	Desenha uma coluna na matriz de leds conforme a cor obtida.
 void draw_band_colors(char *color, Led_Matrix *frame, int column, bool clear, bool print) {
-    if(strcmp(color, "Black") == 0 || strcmp(color, "--") == 0) 
+    if(strcmp(color, "Black") == 0) 
         ws2812_draw_column(frame, 0, 0, 0, column, clear, print);
     else if(strcmp(color, "Brown") == 0) 
         ws2812_draw_column(frame, 0.35/8, 0.05/8, 0, column, clear, print);
